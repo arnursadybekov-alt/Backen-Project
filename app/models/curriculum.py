@@ -91,3 +91,12 @@ class ExerciseResult(Base, TimestampMixin):
 
     child = relationship("Child", back_populates="exercise_results")
     exercise = relationship("Exercise", back_populates="results")
+from fastapi.responses import JSONResponse
+from fastapi import Response
+
+@lessons_router.get("/{lesson_id}")
+async def get_lesson(..., response: Response):
+    # ...
+    response.headers["ETag"] = f'"lesson-{lesson.id}-{lesson.updated_at.isoformat()}"'
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    return lesson

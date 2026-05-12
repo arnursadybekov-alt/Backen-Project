@@ -116,3 +116,12 @@ if os.path.exists(frontend_path):
 @app.get("/health", tags=["Health"])
 async def health_check():
     return {"status": "ok", "version": settings.APP_VERSION}
+# В lifespan или после создания app
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["200/minute"],
+    # Специфические
+)
+
+# Или в роутерах:
+@auth_router.post("/login", dependencies=[Depends(limiter.limit("10/minute"))])

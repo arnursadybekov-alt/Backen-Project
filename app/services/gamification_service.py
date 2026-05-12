@@ -93,3 +93,25 @@ async def create_notification(parent_id: int, child_id: Optional[int], title: st
     notif = Notification(parent_id=parent_id, child_id=child_id, title=title, message=message)
     db.add(notif)
     return notif
+    await invalidate_leaderboard()
+async def get_recommended_difficulty(child: Child, db: AsyncSession) -> DifficultyLevel:
+    """Адаптивная сложность на основе последних 10 упражнений"""
+    result = await db.execute(
+        select(ExerciseResult.is_correct)
+        .where(ExerciseResult.child_id == child.id)
+        .order_by(ExerciseResult.created_at.desc())
+        .limit(10)
+    )
+    recent = result.scalars().all()
+
+    if len(recent) < 5:
+        return DifficultyLevel.BEGINNER
+
+    accuracy = sum(1 for x in recent if x) / len(recent)
+
+    if accuracy >= 0.85:
+        return DifficultyLevel.ADVANCED
+    elif accuracy >= 0.65:
+        return DifficultyLevel.INTERMEDIATE
+    else:
+        return DifficultyLevel.BEGINNER
