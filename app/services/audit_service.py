@@ -2,10 +2,10 @@
 import json
 from datetime import datetime
 from typing import Any, Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import AuditLog
-from app.core.dependencies import get_current_admin
 
 
 async def create_audit_log(
@@ -18,17 +18,17 @@ async def create_audit_log(
     after: Optional[dict] = None,
     ip_address: Optional[str] = None,
 ):
-    """Создать immutable audit log"""
+    """Создать immutable audit log с before/after snapshot"""
     audit = AuditLog(
         admin_id=admin_id,
-        action=action,
+        action=action.upper(),
         entity_type=entity_type,
         entity_id=entity_id,
-        before_state=json.dumps(before) if before else None,
-        after_state=json.dumps(after) if after else None,
+        before_state=json.dumps(before, ensure_ascii=False) if before else None,
+        after_state=json.dumps(after, ensure_ascii=False) if after else None,
         ip_address=ip_address,
-        created_at=datetime.utcnow()
+        created_at=datetime.utcnow(),
     )
     db.add(audit)
-    await db.flush()
+    await db.commit()   # или await db.flush() если в транзакции
     return audit
