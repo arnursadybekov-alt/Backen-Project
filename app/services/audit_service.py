@@ -1,52 +1,34 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.user import AuditLog, Parent
+# app/services/audit_service.py
 import json
- 
- 
-def _serialize(obj) -> str | None:
-    """Serialize a SQLAlchemy model instance to a JSON string snapshot."""
-    if obj is None:
-        return None
-    data = {}
-    for col in obj.__table__.columns:
-        val = getattr(obj, col.name)
-        # Convert non-serialisable types to string
-        if hasattr(val, "isoformat"):
-            val = val.isoformat()
-        elif hasattr(val, "value"):       # Enum
-            val = val.value
-        data[col.name] = val
-    return json.dumps(data, ensure_ascii=False)
- 
- 
-async def log_action(
+from datetime import datetime
+from typing import Any, Optional
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.user import AuditLog
+from app.core.dependencies import get_current_admin
+
+
+async def create_audit_log(
     db: AsyncSession,
-    user: Parent,
+    admin_id: int,
     action: str,
-    resource_type: str,
-    resource_id: int = None,
-    details: dict = None,
-    ip_address: str = None,
-    before: object = None,   # model instance BEFORE change
-    after: object = None,    # model instance AFTER change
+    entity_type: str,
+    entity_id: Optional[int] = None,
+    before: Optional[dict] = None,
+    after: Optional[dict] = None,
+    ip_address: Optional[str] = None,
 ):
-    """
-    Write an immutable audit log entry.
- 
-    Pass `before` with the object's state before modification,
-    and `after` with the object's state after modification.
-    For 'create' only `after` is needed.
-    For 'delete' only `before` is needed.
-    """
-    entry = AuditLog(
-        user_id=user.id,
-        user_email=user.email,
+    """Создать immutable audit log"""
+    audit = AuditLog(
+        admin_id=admin_id,
         action=action,
-        resource_type=resource_type,
-        resource_id=resource_id,
-        details=json.dumps(details, ensure_ascii=False) if details else None,
-        before_snapshot=_serialize(before),
-        after_snapshot=_serialize(after),
+        entity_type=entity_type,
+        entity_id=entity_id,
+        before_state=json.dumps(before) if before else None,
+        after_state=json.dumps(after) if after else None,
         ip_address=ip_address,
+        created_at=datetime.utcnow()
     )
-    db.add(entry)
+    db.add(audit)
+    await db.flush()
+    return audit
