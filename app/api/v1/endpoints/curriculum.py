@@ -15,7 +15,8 @@ from app.services.curriculum_service import (
     update_unit,
     create_lesson,
     update_lesson,
-    # добавь другие CRUD функции если есть
+    create_exercise,
+    update_exercise,
 )
 from app.services.cache_headers import generate_etag, add_cache_headers
 from app.services.audit_service import create_audit_log
@@ -24,7 +25,7 @@ from app.core.dependencies import get_current_admin, get_current_parent
 router = APIRouter(prefix="/curriculum", tags=["Curriculum"])
 
 
-# ==================== PUBLIC (с кэшированием) ====================
+# ====================== PUBLIC ENDPOINTS (Offline-ready) ======================
 
 @router.get("/units")
 async def list_units(db: AsyncSession = Depends(get_db)):
@@ -37,6 +38,11 @@ async def get_unit(unit_id: int, db: AsyncSession = Depends(get_db)):
     if not unit:
         raise HTTPException(status_code=404, detail="Unit not found")
     return unit
+
+
+@router.get("/units/{unit_id}/lessons")
+async def list_lessons_by_unit(unit_id: int, db: AsyncSession = Depends(get_db)):
+    return await get_lessons_by_unit(db, unit_id)
 
 
 @router.get("/lessons/{lesson_id}")
@@ -66,6 +72,11 @@ async def get_lesson(
     return lesson
 
 
+@router.get("/lessons/{lesson_id}/exercises")
+async def list_exercises(lesson_id: int, db: AsyncSession = Depends(get_db)):
+    return await get_exercises_by_lesson(db, lesson_id)
+
+
 @router.get("/exercises/{exercise_id}")
 async def get_exercise(
     exercise_id: int,
@@ -93,16 +104,15 @@ async def get_exercise(
     return exercise
 
 
-# ==================== ADMIN (с Audit Logging) ====================
+# ====================== ADMIN ENDPOINTS (с Audit Logging) ======================
 
 @router.post("/units")
 async def admin_create_unit(
-    unit_in: dict,  # замени на свою Pydantic схему
+    unit_data: dict,  # Замени на свою Pydantic схему, если есть
     current_admin=Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    # Before state = None
-    new_unit = await create_unit(db, unit_in)
+    new_unit = await create_unit(db, unit_data)
 
     await create_audit_log(
         db=db,
@@ -119,17 +129,14 @@ async def admin_create_unit(
 @router.put("/units/{unit_id}")
 async def admin_update_unit(
     unit_id: int,
-    unit_in: dict,
+    unit_data: dict,
     current_admin=Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     old_unit = await get_unit_by_id(db, unit_id)
-    if not old_unit:
-        raise HTTPException(status_code=404, detail="Unit not found")
+    before = old_unit.__dict__.copy() if old_unit else None
 
-    before = old_unit.__dict__.copy() if hasattr(old_unit, "__dict__") else None
-
-    updated_unit = await update_unit(db, unit_id, unit_in)
+    updated_unit = await update_unit(db, unit_id, unit_data)
 
     await create_audit_log(
         db=db,
@@ -143,4 +150,45 @@ async def admin_update_unit(
     return updated_unit
 
 
-# Добавь аналогично для Lesson и Exercise по необходимости
+@router.post("/lessons")
+async def admin_create_lesson(
+    lesson_data: dict,
+    current_admin=Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    new_lesson = await create_lesson(db, lesson_data)
+
+    await create_audit_log(
+        db=db,
+        admin_id=current_admin.id,
+        action="CREATE",
+        entity_type="Lesson",
+        entity_id=new_lesson.id,
+        before=None,
+        after=new_lesson.__dict__ if hasattr(new_lesson, "__dict__") else None,
+    )
+    return new_lesson
+
+
+@router.put("/lessons/{lesson_id}")
+async def admin_update_lesson(
+    lesson_id: int,
+    lesson_data: dict,
+    current_admin=Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    old_lesson = await get_lesson_by_id(db, lesson_id)
+    before = old_lesson.__dict__.copy() if old_lesson else None
+
+    updated_lesson = await update_lesson(db, lesson_id, lesson_data)
+
+    await create_audit_log(
+        db=db,
+        admin_id=current_admin.id,
+        action="UPDATE",
+        entity_type="Lesson",
+        entity_id=lesson_id,
+        before=before,
+        after=updated_lesson.__dict__ if hasattr(updated_lesson, "__dict__") else None,
+    )
+    return updated_lesson

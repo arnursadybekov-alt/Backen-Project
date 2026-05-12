@@ -1,40 +1,35 @@
 # app/services/leaderboard_service.py
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select
 from app.models.user import Child
-from app.services.cache_service import cache_get, cache_set, cache_delete_pattern
+from app.services.cache_service import cache_get, cache_set
 
 
-async def get_leaderboard(db: AsyncSession, age_min: int = 5, age_max: int = 12, limit: int = 20):
-    """
-    Получить лидерборд по возрастной группе с кэшированием
-    """
+async def get_leaderboard(db: AsyncSession, age_min: int = 6, age_max: int = 12, limit: int = 20):
     cache_key = f"leaderboard:{age_min}:{age_max}:{limit}"
 
-    # Пытаемся взять из кэша
     cached = await cache_get(cache_key)
     if cached:
         return cached
 
-    # Если нет в кэше — считаем из БД
-    query = (
-        select(
-            Child.id,
-            Child.username,
-            Child.xp,
-            Child.level,
-            Child.streak,
-            Child.age
-        )
-        .where(Child.age.between(age_min, age_max))
+    result = await db.execute(
+        select(Child)
+        .where(Child.age >= age_min, Child.age <= age_max)
         .order_by(Child.xp.desc(), Child.level.desc())
         .limit(limit)
     )
+    children = result.scalars().all()
 
-    result = await db.execute(query)
-    leaderboard = [dict(row._mapping) for row in result]
+    leaderboard = []
+    for rank, child in enumerate(children, 1):
+        leaderboard.append({
+            "rank": rank,
+            "display_name": child.display_name or child.username,
+            "xp": child.xp,
+            "level": child.level,
+            "streak": child.streak,
+            "age": child.age
+        })
 
-    # Сохраняем в кэш на 5 минут
     await cache_set(cache_key, leaderboard, ttl=300)
-
     return leaderboard
