@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="phonicsGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff6b6b"/>
+      <stop offset="100%" stop-color="#ff8e53"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="45" fill="url(#phonicsGrad)" />
+  <text x="50" y="35" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="white" font-weight="bold">Aa</text>
+  <text x="50" y="55" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="white">Phonics</text>
+  <path d="M25 70 Q35 65 45 70 Q55 75 65 70" stroke="white" stroke-width="2" fill="none" />
+</svg>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Literacy Platform</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="screen active">
+      <div class="hero-panel">
+        <img src="/assets/hero.svg" alt="Kids learning illustration" class="hero-illustration" />
+      </div>
+      <div class="auth-container">
+        <div class="logo">
+          <span class="logo-icon">📚</span>
+          <h1>LiteracyKids</h1>
+          <p>Children's Learning Platform</p>
+        </div>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="login">Login</button>
+          <button class="tab-btn" data-tab="register">Register</button>
+        </div>
+        <div id="login-panel" class="tab-panel active">
+          <input type="email" id="login-email" placeholder="Email" />
+          <input type="password" id="login-password" placeholder="Password" />
+          <button id="login-btn" class="btn-primary">Sign In</button>
+        </div>
+        <div id="register-panel" class="tab-panel">
+          <input type="text" id="reg-name" placeholder="Full Name" />
+          <input type="email" id="reg-email" placeholder="Email" />
+          <input type="password" id="reg-password" placeholder="Password (min 8 chars)" />
+          <button id="register-btn" class="btn-primary">Create Account</button>
+        </div>
+        <div id="auth-error" class="error-msg hidden"></div>
+      </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="main-screen" class="screen">
+      <div class="particles" id="particles"></div>
+      <nav class="navbar">
+        <div class="nav-logo">📚 LiteracyKids</div>
+        <div class="nav-links">
+          <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+          <button class="nav-btn" data-view="children">My Children</button>
+          <button class="nav-btn" data-view="curriculum">Curriculum</button>
+          <button class="nav-btn" data-view="leaderboard">Leaderboard</button>
+          <button class="nav-btn" id="admin-nav-btn" data-view="admin" style="display:block">Admin Panel</button>
+          <button class="nav-btn notif-btn" data-view="notifications">
+            Notifications <span id="notif-badge" class="badge hidden">0</span>
+          </button>
+        </div>
+        <div class="nav-right">
+          <span id="user-name"></span>
+          <button id="logout-btn" class="btn-secondary">Logout</button>
+        </div>
+      </nav>
+
+      <!-- Dashboard View -->
+      <div id="dashboard-view" class="view active">
+        <div class="dashboard-banner">
+          <div>
+            <h2>Welcome back, <span id="dash-name"></span>!</h2>
+            <p>Track your children's learning progress and keep the adventure going.</p>
+          </div>
+          <img src="/assets/hero.svg" alt="Learning illustration" class="dashboard-illustration" />
+        </div>
+        <div class="page-header">
+          <h2>Progress overview</h2>
+          <p>Fresh insights for lessons, streaks, and rewards.</p>
+        </div>
+        <div id="dashboard-cards" class="stats-grid">
+          <!-- Stats will be populated by JS -->
+        </div>
+        <div class="section-header"><h3>🎯 Quick Actions</h3></div>
+        <div class="quick-actions">
+          <button class="action-card" onclick="showView('children')">
+            <span>👨‍👩‍👧‍👦</span><span>Manage Children</span>
+          </button>
+          <button class="action-card" onclick="showView('curriculum')">
+            <span>📚</span><span>Browse Lessons</span>
+          </button>
+          <button class="action-card" onclick="showView('leaderboard')">
+            <span>🏅</span><span>Leaderboard</span>
+          </button>
+          <button class="action-card" onclick="window.open('/docs','_blank')">
+            <span>🔧</span><span>API Docs</span>
+          </button>
+        </div>
+        <div class="section-header"><h3>📖 Learning Activities</h3></div>
+        <div class="activity-grid">
+          <div class="activity-item">
+            <img src="/assets/phonics.svg" alt="Phonics" class="activity-icon" />
+            <h4>Phonics</h4>
+            <p>Learn letter sounds and pronunciation</p>
+          </div>
+          <div class="activity-item">
+            <img src="/assets/handwriting.svg" alt="Handwriting" class="activity-icon" />
+            <h4>Handwriting</h4>
+            <p>Practice writing letters and words</p>
+          </div>
+          <div class="activity-item">
+            <img src="/assets/sight-words.svg" alt="Sight Words" class="activity-icon" />
+            <h4>Sight Words</h4>
+            <p>Recognize common words instantly</p>
+          </div>
+          <div class="activity-item">
+            <img src="/assets/vocabulary.svg" alt="Vocabulary" class="activity-icon" />
+            <h4>Vocabulary</h4>
+            <p>Build word knowledge and meanings</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Children View -->
+      <div id="children-view" class="view">
+        <div class="page-header">
+          <h2>My Children</h2>
+          <button class="btn-primary" id="add-child-btn">+ Add Child</button>
+        </div>
+        <div id="children-list" class="children-grid"></div>
+
+        <!-- Add Child Modal -->
+        <div id="child-modal" class="modal hidden">
+          <div class="modal-box">
+            <h3>Add Child Profile</h3>
+            <input type="text" id="child-name" placeholder="Child's name" />
+            <input type="text" id="child-display" placeholder="Display name (for leaderboard)" />
+             <select id="child-age">
+  <option value="">Select age...</option>
+  <option value="3">3</option>
+  <option value="4">4</option>
+  <option value="5">5</option>
+  <option value="6">6</option>
+  <option value="7">7</option>
+  <option value="8">8</option>
+  <option value="9">9</option>
+  <option value="10">10</option>
+  <option value="11">11</option>
+  <option value="12">12</option>
+</select>
+            <input type="text" id="child-avatar" placeholder="Avatar URL (optional)" />
+            <div class="modal-actions">
+              <button class="btn-secondary" id="cancel-child">Cancel</button>
+              <button class="btn-primary" id="save-child">Save</button>
+            </div>
+            <div id="child-error" class="error-msg hidden"></div>
+          </div>
+        </div>
+
+        <!-- Child Detail Panel -->
+        <div id="child-detail" class="hidden">
+          <div class="detail-header">
+            <button class="back-btn" id="back-to-children">← Back</button>
+            <h3 id="detail-child-name"></h3>
+          </div>
+          <div id="child-stats" class="stats-row"></div>
+          <div class="section-header"><h3>Badges</h3></div>
+          <div id="child-badges" class="badges-row"></div>
+          <div class="section-header"><h3>Recent Exercises</h3></div>
+          <div id="child-exercises" class="exercise-list"></div>
+        </div>
+          <div class="section-header">
+            <h3>Learning Progress</h3>
+          </div>
+          <div id="child-progress-list" class="progress-list"></div>
+          <div class="section-header"><h3>Try a Lesson</h3></div>
+          <div id="lesson-selector" class="lesson-selector"></div>
+        </div>
+      </div>
+
+      <!-- Curriculum View -->
+      <div id="curriculum-view" class="view">
+        <div class="page-header"><h2>Curriculum</h2></div>
+        <div id="units-list" class="units-grid"></div>
+        <div id="lessons-panel" class="hidden">
+          <div class="detail-header">
+            <button class="back-btn" id="back-to-units">← Units</button>
+            <h3 id="unit-title"></h3>
+          </div>
+          <div id="lessons-list" class="lessons-grid"></div>
+        </div>
+        <div id="exercises-panel" class="hidden">
+          <div class="detail-header">
+            <button class="back-btn" id="back-to-lessons">← Lessons</button>
+            <h3 id="lesson-title"></h3>
+          </div>
+          <div id="exercises-list" class="exercises-grid"></div>
+          <div id="exercise-runner" class="hidden">
+            <div class="exercise-card">
+              <div class="exercise-type-tag" id="ex-type"></div>
+              <h3 id="ex-question"></h3>
+              <p id="ex-instructions" class="ex-instructions"></p>
+              <div id="ex-options" class="ex-options"></div>
+              <input type="text" id="ex-answer" placeholder="Type your answer..." />
+              <div class="exercise-actions">
+                <select id="ex-child-select"><option value="">Select child...</option></select>
+                <button class="btn-primary" id="submit-exercise">Submit Answer</button>
+              </div>
+              <div id="ex-feedback" class="ex-feedback hidden"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Leaderboard View -->
+      <div id="leaderboard-view" class="view">
+        <div class="page-header"><h2>🏆 Leaderboard</h2></div>
+        <div class="leaderboard-filters">
+          <select id="lb-age-group">
+            <option value="3,6">Ages 3–6</option>
+            <option value="7,9">Ages 7–9</option>
+            <option value="10,12">Ages 10–12</option>
+          </select>
+          <button class="btn-secondary" id="refresh-lb">Refresh</button>
+        </div>
+        <div id="leaderboard-list" class="leaderboard-table"></div>
+      </div>
+      <!-- Admin View -->
+      <div id="admin-view" class="view">
+        <div class="page-header"><h2>⚙️ Admin Panel</h2></div>
+        <div class="stats-grid" id="admin-stats-cards"></div>
+
+        <div class="section-header"><h3>📚 Manage Units</h3></div>
+        <button class="btn-primary" id="add-unit-btn" style="margin-bottom:1rem">+ Add Unit</button>
+        <div id="admin-units-list"></div>
+
+        <!-- Add Unit Modal -->
+        <div id="unit-modal" class="modal hidden">
+          <div class="modal-box">
+            <h3>Add Unit</h3>
+            <input type="text" id="unit-title-input" placeholder="Unit title" />
+            <input type="text" id="unit-desc-input" placeholder="Description" />
+            <select id="unit-difficulty-input">
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
+            <label><input type="checkbox" id="unit-published-input"> Published</label>
+            <div class="modal-actions">
+              <button class="btn-secondary" id="cancel-unit">Cancel</button>
+              <button class="btn-primary" id="save-unit">Save</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-header"><h3>📋 Add Lesson</h3></div>
+        <div class="modal-box" style="margin-bottom:1rem">
+          <input type="text" id="lesson-title-input" placeholder="Lesson title" />
+          <select id="lesson-unit-select"><option value="">Select unit...</option></select>
+          <select id="lesson-difficulty-input">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+          <input type="number" id="lesson-xp-input" placeholder="XP reward" value="50" />
+          <label><input type="checkbox" id="lesson-published-input"> Published</label>
+          <button class="btn-primary" id="save-lesson-btn" style="margin-top:.5rem">Add Lesson</button>
+        </div>
+
+        <div class="section-header"><h3>📝 Activity Logs</h3></div>
+        <div id="admin-logs-list"></div>
+      </div>
+
+      <!-- Notifications View -->
+
+      <!-- Notifications View -->
+      <div id="notifications-view" class="view">
+        <div class="page-header">
+          <h2>Notifications</h2>
+          <button class="btn-secondary" id="mark-all-read">Mark all read</button>
+        </div>
+        <div id="notifications-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="/app.js"></script>
+  
+  
+</body>
+</html>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="handwritingGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4ecdc4"/>
+      <stop offset="100%" stop-color="#44a08d"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="50" r="45" fill="url(#handwritingGrad)" />
+  <path d="M25 35 Q35 30 45 35 Q55 40 65 35" stroke="white" stroke-width="3" stroke-linecap="round" fill="none" />
+  <path d="M25 45 Q35 40 45 45 Q55 50 65 45" stroke="white" stroke-width="3" stroke-linecap="round" fill="none" />
+  <path d="M25 55 Q35 50 45 55 Q55 60 65 55" stroke="white" stroke-width="3" stroke-linecap="round" fill="none" />
+  <text x="50" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Writing</text>
+</svg>
