@@ -36,7 +36,7 @@ def calculate_streak(last_activity: Optional[datetime], current_streak: int) -> 
 
 
 def is_streak_at_risk(last_activity: Optional[datetime]) -> bool:
-    """Check if streak will break today"""
+    """Check if streak is at risk of breaking today"""
     if last_activity is None:
         return True
     last_date = last_activity.date() if hasattr(last_activity, "date") else last_activity
@@ -94,15 +94,13 @@ async def award_badges(
 async def process_lesson_completion(
     child: Child, lesson_xp: int, score: float, db: AsyncSession
 ) -> dict:
-    """Main function: process XP, streak, level and badges after lesson completion"""
+    """Process lesson completion: XP, streak, level, badges + cache invalidation"""
     old_level = child.level
 
-    # Streak bonus
     bonus_xp = settings.STREAK_BONUS_XP if child.streak >= 3 else 0
     earned_xp = lesson_xp + bonus_xp
     child.xp += earned_xp
 
-    # Update streak
     new_streak = calculate_streak(child.last_activity_date, child.streak)
     streak_increased = new_streak > child.streak
 
@@ -110,7 +108,6 @@ async def process_lesson_completion(
     child.last_activity_date = datetime.now(timezone.utc)
     child.level = calculate_level(child.xp)
 
-    # Award badges
     new_badges = await award_badges(
         child, db, lesson_completed=True, perfect=(score >= 1.0)
     )
@@ -140,7 +137,7 @@ async def create_notification(
     message: str,
     db: AsyncSession,
 ) -> Notification:
-    """Create a notification for parent"""
+    """Create notification for parent"""
     notification = Notification(
         parent_id=parent_id,
         child_id=child_id,
@@ -148,31 +145,5 @@ async def create_notification(
         message=message,
     )
     db.add(notification)
-    await db.flush()        # Чтобы можно было сразу получить ID если нужно
+    await db.flush()
     return notification
-
-
-# Simple version (can be used as fallback)
-async def get_recommended_difficulty_simple(
-    child: Child, db: AsyncSession
-) -> DifficultyLevel:
-    """Simple adaptive difficulty recommendation"""
-    result = await db.execute(
-        select(ExerciseResult.is_correct)
-        .where(ExerciseResult.child_id == child.id)
-        .order_by(ExerciseResult.created_at.desc())
-        .limit(10)
-    )
-    recent = result.scalars().all()
-
-    if len(recent) < 5:
-        return DifficultyLevel.BEGINNER
-
-    accuracy = sum(1 for x in recent if x) / len(recent)
-
-    if accuracy >= 0.85:
-        return DifficultyLevel.ADVANCED
-    elif accuracy >= 0.65:
-        return DifficultyLevel.INTERMEDIATE
-    else:
-        return DifficultyLevel.BEGINNER
