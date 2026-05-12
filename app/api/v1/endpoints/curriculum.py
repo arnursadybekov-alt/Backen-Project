@@ -38,18 +38,17 @@ async def get_lesson(
     if not lesson:
         raise HTTPException(status_code=404, detail={"message": "Lesson not found"})
 
-    # Offline caching headers
+    # Offline-ready headers
     response.headers["ETag"] = f'"lesson-{lesson.id}-{lesson.updated_at.isoformat()}"'
     response.headers["Cache-Control"] = "public, max-age=3600"
 
     return lesson
 
-# ── Exercises ──────────────────────────────────────────────────────────────────
 
 @exercises_router.get("/{exercise_id}", response_model=ExerciseOut)
 async def get_exercise(
     exercise_id: int,
-    response: Response,                    # ← Для Cache headers
+    response: Response,                    # ← Добавь
     current_user: Parent = Depends(get_current_parent),
     db: AsyncSession = Depends(get_db)
 ):
@@ -58,13 +57,8 @@ async def get_exercise(
     if not exercise:
         raise HTTPException(status_code=404, detail={"message": "Exercise not found"})
 
-    # Offline-ready Content API (бонус)
+    # Offline-ready headers
     response.headers["ETag"] = f'"exercise-{exercise.id}-{exercise.updated_at.isoformat()}"'
     response.headers["Cache-Control"] = "public, max-age=3600"
 
     return exercise
-
-
-# Остальной код файла оставляем как есть
-@units_router.get("")
-# ... (весь остальной код без изменений) ...
