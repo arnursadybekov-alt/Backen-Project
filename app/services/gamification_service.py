@@ -15,12 +15,12 @@ logger = logging.getLogger(__name__)
 
 
 def calculate_level(xp: int) -> int:
-    """Calculate child level based on XP"""
+    """Calculate child's level based on total XP"""
     return max(1, (xp // settings.XP_LEVEL_THRESHOLD) + 1)
 
 
 def calculate_streak(last_activity: Optional[datetime], current_streak: int) -> int:
-    """Calculate current streak"""
+    """Calculate current learning streak"""
     if last_activity is None:
         return 1
 
@@ -36,7 +36,7 @@ def calculate_streak(last_activity: Optional[datetime], current_streak: int) -> 
 
 
 def is_streak_at_risk(last_activity: Optional[datetime]) -> bool:
-    """Check if streak is at risk of breaking today"""
+    """Check if streak will break today"""
     if last_activity is None:
         return True
     last_date = last_activity.date() if hasattr(last_activity, "date") else last_activity
@@ -60,7 +60,7 @@ async def award_badges(
     lesson_completed: bool = False,
     perfect: bool = False,
 ) -> List[BadgeType]:
-    """Award new badges to child"""
+    """Award new badges if conditions are met"""
     result = await db.execute(
         select(Badge.badge_type).where(Badge.child_id == child.id)
     )
@@ -92,18 +92,14 @@ async def award_badges(
 
 
 async def process_lesson_completion(
-    child: Child,
-    lesson_xp: int,
-    score: float,
-    db: AsyncSession,
+    child: Child, lesson_xp: int, score: float, db: AsyncSession
 ) -> dict:
-    """Process lesson completion: XP, streak, level, badges"""
+    """Main function: process XP, streak, level and badges after lesson completion"""
     old_level = child.level
 
-    # Calculate bonus XP for streak
+    # Streak bonus
     bonus_xp = settings.STREAK_BONUS_XP if child.streak >= 3 else 0
     earned_xp = lesson_xp + bonus_xp
-
     child.xp += earned_xp
 
     # Update streak
@@ -144,7 +140,7 @@ async def create_notification(
     message: str,
     db: AsyncSession,
 ) -> Notification:
-    """Create notification for parent"""
+    """Create a notification for parent"""
     notification = Notification(
         parent_id=parent_id,
         child_id=child_id,
@@ -152,15 +148,15 @@ async def create_notification(
         message=message,
     )
     db.add(notification)
-    await db.flush()  # Optional: to get ID immediately
+    await db.flush()        # Чтобы можно было сразу получить ID если нужно
     return notification
 
 
-# Optional: Simple version (you can remove if using adaptive_service.py)
+# Simple version (can be used as fallback)
 async def get_recommended_difficulty_simple(
     child: Child, db: AsyncSession
 ) -> DifficultyLevel:
-    """Simple adaptive difficulty based on last 10 exercises"""
+    """Simple adaptive difficulty recommendation"""
     result = await db.execute(
         select(ExerciseResult.is_correct)
         .where(ExerciseResult.child_id == child.id)
