@@ -79,6 +79,12 @@ async def process_lesson_completion(child: Child, lesson_xp: int, score: float, 
     # Инвалидация кэша лидерборда после изменения прогресса
     from app.services.cache_service import cache_delete_pattern
     await cache_delete_pattern("leaderboard:*")
+        # Инвалидация кэша лидерборда (бонус)
+    try:
+        from app.services.cache_service import cache_delete_pattern
+        await cache_delete_pattern("leaderboard:*")
+    except Exception as e:
+        logger.warning(f"Failed to invalidate leaderboard cache: {e}")
     return {
         "xp_earned": earned_xp,
         "bonus_xp": bonus_xp,
