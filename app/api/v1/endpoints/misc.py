@@ -1,5 +1,31 @@
-from app.core.redis import get_cached_leaderboard, set_cached_leaderboard, invalidate_leaderboard
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, update
+from typing import List, Optional
+from app.db.session import get_db
+from app.models.user import Parent, Child, Notification, AuditLog
+from app.models.curriculum import LessonProgress, Lesson, Unit
+from app.core.dependencies import get_current_parent, get_current_admin
+from app.schemas.schemas import (
+    NotificationOut, NotificationMarkRead,
+    LeaderboardEntry, AuditLogOut, AdminStats,
+    ParentOut, ParentUpdate, ChildOut, PaginatedResponse,
+)
+
+# ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
 from app.services.cache_service import cache_get, cache_set
+# ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+
+parents_router = APIRouter(prefix="/parents", tags=["Parents"])
+notifications_router = APIRouter(prefix="/notifications", tags=["Notifications"])
+leaderboard_router = APIRouter(prefix="/leaderboard", tags=["Leaderboard"])
+admin_router = APIRouter(prefix="/admin", tags=["Admin"])
+
+
+# ── Parents, Notifications, Admin (оставляем как есть) ───────────────────────
+# ... (весь код до Leaderboard без изменений) ...
+
+
 # ── Leaderboard ───────────────────────────────────────────────────────────────
 
 @leaderboard_router.get("", response_model=List[LeaderboardEntry])
@@ -10,7 +36,7 @@ async def get_leaderboard(
     current_user: Parent = Depends(get_current_parent),
     db: AsyncSession = Depends(get_db),
 ):
-    """Redis-cached leaderboard by age group with TTL"""
+    """Redis-cached leaderboard by age group"""
     cache_key = f"leaderboard:{age_min}:{age_max}:{limit}"
 
     # Проверка кэша
@@ -18,7 +44,7 @@ async def get_leaderboard(
     if cached:
         return cached
 
-    # Запрос из БД
+    # Если нет в кэше — из базы
     result = await db.execute(
         select(Child)
         .where(Child.age >= age_min, Child.age <= age_max)
@@ -39,7 +65,11 @@ async def get_leaderboard(
             age_group=age_group
         ))
 
-    # Сохранение в Redis
+    # Сохраняем в Redis
     await cache_set(cache_key, [e.model_dump() for e in entries], ttl=60)
 
     return entries
+
+
+# ── Admin (оставляем как есть) ───────────────────────────────────────────────
+# ... остальной код файла ...
