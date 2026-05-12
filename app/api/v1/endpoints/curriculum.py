@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from fastapi import Response
 from typing import Optional, List
 from app.db.session import get_db
 from app.models.curriculum import Unit, Lesson, Exercise, DifficultyLevel
@@ -28,7 +29,7 @@ exercises_router = APIRouter(prefix="/exercises", tags=["Exercises"])
 @lessons_router.get("/{lesson_id}", response_model=LessonOut)
 async def get_lesson(
     lesson_id: int,
-    response: Response,                    # ← Для Cache headers
+    response: Response,                    # ← Добавь
     current_user: Parent = Depends(get_current_parent),
     db: AsyncSession = Depends(get_db)
 ):
@@ -37,12 +38,11 @@ async def get_lesson(
     if not lesson:
         raise HTTPException(status_code=404, detail={"message": "Lesson not found"})
 
-    # Offline-ready Content API (бонус)
+    # Offline caching headers
     response.headers["ETag"] = f'"lesson-{lesson.id}-{lesson.updated_at.isoformat()}"'
     response.headers["Cache-Control"] = "public, max-age=3600"
 
     return lesson
-
 
 # ── Exercises ──────────────────────────────────────────────────────────────────
 
