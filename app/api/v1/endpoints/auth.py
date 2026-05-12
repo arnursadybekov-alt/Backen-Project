@@ -55,7 +55,7 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
         access_token=create_access_token(token_data),
         refresh_token=create_refresh_token(token_data),
     )
-
+@auth_router.post("/login", dependencies=[Depends(limiter.limit("10/minute"))])
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh(data: RefreshRequest, db: AsyncSession = Depends(get_db)):
@@ -73,6 +73,7 @@ async def refresh(data: RefreshRequest, db: AsyncSession = Depends(get_db)):
         access_token=create_access_token(token_data),
         refresh_token=create_refresh_token(token_data),
     )
+@auth_router.post("/register", dependencies=[Depends(limiter.limit("5/minute"))])
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
@@ -81,3 +82,4 @@ async def logout(
 ):
     from app.core.dependencies import _token_blacklist
     _token_blacklist.add(credentials.credentials)
+@auth_router.post("/refresh", dependencies=[Depends(limiter.limit("15/minute"))])

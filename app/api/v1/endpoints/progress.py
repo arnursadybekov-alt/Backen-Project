@@ -9,6 +9,11 @@ from app.services.gamification_service import process_lesson_completion, create_
 from app.api.v1.websocket import manager
 from app.schemas.schemas import LessonComplete, LessonCompleteResult, ExerciseSubmit, ExerciseSubmitResult
 
+# Для Rate Limiting
+from fastapi import Depends
+from slowapi import Limiter
+from app.main import limiter   # ← Важно: импортируем limiter из main.py
+
 router = APIRouter(tags=["Progress"])
 
 
@@ -85,7 +90,9 @@ async def complete_lesson(
     return LessonCompleteResult(**result)
 
 
-@router.post("/exercises/{exercise_id}/submit", response_model=ExerciseSubmitResult)
+@router.post("/exercises/{exercise_id}/submit", 
+             response_model=ExerciseSubmitResult,
+             dependencies=[Depends(limiter.limit("30/minute"))])   # ← Rate Limiting бонус
 async def submit_exercise(
     exercise_id: int,
     data: ExerciseSubmit,

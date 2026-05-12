@@ -76,7 +76,9 @@ async def process_lesson_completion(child: Child, lesson_xp: int, score: float, 
     child.level = calculate_level(child.xp)
 
     new_badges = await award_badges(child, db, lesson_completed=True, perfect=(score >= 1.0))
-
+    # Инвалидация кэша лидерборда после изменения прогресса
+    from app.services.cache_service import cache_delete_pattern
+    await cache_delete_pattern("leaderboard:*")
     return {
         "xp_earned": earned_xp,
         "bonus_xp": bonus_xp,

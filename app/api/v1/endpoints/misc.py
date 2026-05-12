@@ -1,5 +1,5 @@
 from app.core.redis import get_cached_leaderboard, set_cached_leaderboard, invalidate_leaderboard
-
+from app.services.cache_service import cache_get, cache_set
 @leaderboard_router.get("", response_model=List[LeaderboardEntry])
 async def get_leaderboard(
     age_min: int = Query(3, ge=3, le=12),
@@ -8,10 +8,15 @@ async def get_leaderboard(
     current_user: Parent = Depends(get_current_parent),
     db: AsyncSession = Depends(get_db),
 ):
-    cached = await get_cached_leaderboard(age_min, age_max, limit)
+    """Redis-cached leaderboard by age group"""
+    cache_key = f"leaderboard:{age_min}:{age_max}:{limit}"
+
+    # Проверка кэша
+    cached = await cache_get(cache_key)
     if cached:
         return cached
 
+    # Запрос из базы
     result = await db.execute(
         select(Child)
         .where(Child.age >= age_min, Child.age <= age_max)
@@ -32,5 +37,7 @@ async def get_leaderboard(
             age_group=age_group
         ))
 
-    await set_cached_leaderboard(age_min, age_max, limit, [e.model_dump() for e in entries])
+    # Сохранение в кэш
+    await cache_set(cache_key, [entry.model_dump() for entry in entries], ttl=60)
+
     return entries
