@@ -6,12 +6,15 @@ from app.services.cache_service import cache_get, cache_set
 
 
 async def get_leaderboard(db: AsyncSession, age_min: int = 6, age_max: int = 12, limit: int = 20):
+    """Полноценный лидерборд с кэшированием по возрастным группам"""
     cache_key = f"leaderboard:{age_min}:{age_max}:{limit}"
 
+    # Проверка кэша
     cached = await cache_get(cache_key)
     if cached:
         return cached
 
+    # Запрос к базе
     result = await db.execute(
         select(Child)
         .where(Child.age >= age_min, Child.age <= age_max)
@@ -24,12 +27,13 @@ async def get_leaderboard(db: AsyncSession, age_min: int = 6, age_max: int = 12,
     for rank, child in enumerate(children, 1):
         leaderboard.append({
             "rank": rank,
-            "display_name": child.display_name or child.username,
+            "display_name": getattr(child, "display_name", None) or child.username,
             "xp": child.xp,
             "level": child.level,
             "streak": child.streak,
             "age": child.age
         })
 
+    # Сохранение в кэш (5 минут)
     await cache_set(cache_key, leaderboard, ttl=300)
     return leaderboard
